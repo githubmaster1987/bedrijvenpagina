@@ -13,14 +13,13 @@ class HuistuininterieurspiderSpider(scrapy.Spider):
     )
 
     keywords = ['huis-tuin-interieur']
-    counts = [181520] #699659
+    counts = [18152] #699659
+    # counts = [3] #699659
 
     def set_proxies(self, url, callback):
         req = Request(url=url, callback=callback)
-
         # user_agent = self.ua.random
         # req.headers['User-Agent'] = user_agent
-
         return req
 
     def start_requests(self):
@@ -41,8 +40,8 @@ class HuistuininterieurspiderSpider(scrapy.Spider):
                 yield req
 
     def parse_item(self, response):
-        print("_________________________________")
-        print response.url
+        # print("_________________________________")
+        # print response.url
         item = BedrijvenpaginaItem()
         card_div = response.xpath("//div[@class='card']")
 
@@ -60,15 +59,19 @@ class HuistuininterieurspiderSpider(scrapy.Spider):
             item["city"] = city
             item["url"] = url
 
-        note_div = response.xpath("//div[@class='note']/p/a/@href").extract()
-        if len(note_div) > 0:
-            req = self.set_proxies(response.urljoin(note_div[0]) , self.parse_item_detail)
-            req.meta["item"] = item
-            yield req
-        else:
-            yield item
+            note_div = row.xpath(".//div[@class='note']/p/a/@href").extract()
+            if len(note_div) > 0:
+                req = self.set_proxies(response.urljoin(note_div[0]) , self.parse_item_detail)
+                req.meta["item"] = item
+                yield req
+            else:
+                print("_________________________________")
+                print response.url
+                if item["name"] != "":
+                    yield item
 
     def parse_item_detail(self, response):
+
         item = response.meta["item"]
 
         item["phoneno"] = response.xpath("//div[@class='tel mobile']/a/span/text()").extract()
@@ -76,4 +79,8 @@ class HuistuininterieurspiderSpider(scrapy.Spider):
         item["website"] = response.xpath("//div[@class='url']/a/text()").extract()
         item["kvk"] = response.xpath("//div[@class='kvk']/a/text()").extract()
         item["sub_url"] = response.url
-        yield item
+
+        if item["name"] != "":
+            print("_________________________________")
+            print response.url
+            yield item

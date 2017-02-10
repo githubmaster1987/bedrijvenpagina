@@ -12,18 +12,14 @@ class BedrijvenpaginaspiderSpider(scrapy.Spider):
     )
 
     keywords = ['eten-drinken', 'beauty-en-verzorging', 'hobby-vrije-tijd', 'huis-tuin-interieur', 'zorg-en-gezondheid', 'zoek/winkels']
-    counts = [115125, 64048, 150304, 181520 , 93535, 95127] #699659
+    counts = [11512, 6404, 15030, 18152 , 9353, 9512] #699659
 
     def set_proxies(self, url, callback):
         req = Request(url=url, callback=callback)
-
-        user_agent = self.ua.random
-        req.headers['User-Agent'] = user_agent
-
         return req
 
     def start_requests(self):
-        self.ua = UserAgent()
+        # self.ua = UserAgent()
 
         for idx in range(0, len(self.keywords)):
 
@@ -59,13 +55,18 @@ class BedrijvenpaginaspiderSpider(scrapy.Spider):
             item["city"] = city
             item["url"] = url
 
-        note_div = response.xpath("//div[@class='note']/p/a/@href").extract()
-        if len(note_div) > 0:
-            req = self.set_proxies(response.urljoin(note_div[0]) , self.parse_item_detail)
-            req.meta["item"] = item
-            yield req
-        else:
-            yield item
+            note_div = row.xpath(".//div[@class='note']/p/a/@href").extract()
+            # print ("**************************")
+            # print item["name"]
+            # print len(note_div)
+
+            if len(note_div) > 0:
+                req = self.set_proxies(response.urljoin(note_div[0]) , self.parse_item_detail)
+                req.meta["item"] = item
+                yield req
+            else:
+                if item["name"] != "":
+                    yield item
 
     def parse_item_detail(self, response):
         item = response.meta["item"]
@@ -75,4 +76,6 @@ class BedrijvenpaginaspiderSpider(scrapy.Spider):
         item["website"] = response.xpath("//div[@class='url']/a/text()").extract()
         item["kvk"] = response.xpath("//div[@class='kvk']/a/text()").extract()
         item["sub_url"] = response.url
-        yield item
+
+        if item["name"] != "":
+            yield item

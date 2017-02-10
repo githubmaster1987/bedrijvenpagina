@@ -5,7 +5,6 @@ import time, re, random, base64
 from bedrijvenpagina.items import BedrijvenpaginaItem
 # from fake_useragent import UserAgent
 
-
 class BeautyEnVerzorgingspiderSpider(scrapy.Spider):
     name = "Beauty_en_verzorgingSpider"
     allowed_domains = ["www.bedrijvenpagina.nl"]
@@ -14,14 +13,10 @@ class BeautyEnVerzorgingspiderSpider(scrapy.Spider):
     )
 
     keywords = ['beauty-en-verzorging']
-    counts = [64048] #699659
+    counts = [6420] #699659
 
     def set_proxies(self, url, callback):
         req = Request(url=url, callback=callback)
-
-        # user_agent = self.ua.random
-        # req.headers['User-Agent'] = user_agent
-
         return req
 
     def start_requests(self):
@@ -61,13 +56,18 @@ class BeautyEnVerzorgingspiderSpider(scrapy.Spider):
             item["city"] = city
             item["url"] = url
 
-        note_div = response.xpath("//div[@class='note']/p/a/@href").extract()
-        if len(note_div) > 0:
-            req = self.set_proxies(response.urljoin(note_div[0]) , self.parse_item_detail)
-            req.meta["item"] = item
-            yield req
-        else:
-            yield item
+            note_div = row.xpath(".//div[@class='note']/p/a/@href").extract()
+            # print ("**************************")
+            # print item["name"]
+            # print len(note_div)
+
+            if len(note_div) > 0:
+                req = self.set_proxies(response.urljoin(note_div[0]) , self.parse_item_detail)
+                req.meta["item"] = item
+                yield req
+            else:
+                if item["name"] != "":
+                    yield item
 
     def parse_item_detail(self, response):
         item = response.meta["item"]
@@ -77,4 +77,6 @@ class BeautyEnVerzorgingspiderSpider(scrapy.Spider):
         item["website"] = response.xpath("//div[@class='url']/a/text()").extract()
         item["kvk"] = response.xpath("//div[@class='kvk']/a/text()").extract()
         item["sub_url"] = response.url
-        yield item
+
+        if item["name"] != "":
+            yield item
